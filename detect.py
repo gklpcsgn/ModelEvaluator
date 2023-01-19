@@ -26,21 +26,21 @@ if modelName == "yolo":
     start_time = time.time()
     # os.system("conda activate yolov7")
     os.system("python3" + " " + yoloPath + "/detect.py" + " " + "--weights" + " " + yoloPath + "/yolov7-e6e.pt" + " " + "--conf" + " " + "0.60" + " " + "--img-size" + " " + "640" + " " + "--source" + " " + imagePath + " --save-txt")
-    print("--- %s seconds ---" % (time.time() - start_time))
+    print("--- Total time : %s seconds ---" % (time.time() - start_time))
 elif modelName == "detectron2":
     # os.system("conda activate detectron2")
     from Detector import *
     detector = Detector()
     start_time = time.time()
     detector.onImage(imagePath)
-    print("--- %s seconds ---" % (time.time() - start_time))
+    print("--- Total time : %s seconds ---" % (time.time() - start_time))
 elif modelName == "detr":
     # os.system("conda activate detr")
     from DETRDetector import *
     detector = DETRDetector()
     start_time = time.time()
     detector.onImage(imagePath)
-    print("--- %s seconds ---" % (time.time() - start_time))
+    print("--- Total time : %s seconds ---" % (time.time() - start_time))
 elif modelName == "prbnet":
     # os.system("conda activate prbnet")
     # os.system("ls")
@@ -50,6 +50,6 @@ elif modelName == "prbnet":
     # print(command)
     start_time = time.time()
     os.system(command)
-    print("--- %s seconds ---" % (time.time() - start_time))
+    print("--- Total time : %s seconds ---" % (time.time() - start_time))
 else:
     print("Please write a valid model name")

@@ -5,10 +5,12 @@ import time
 yoloPath = "./yolov7/yolov7"
 detectorPath = "./detectron2/detectron2"
 detrPath = "./detr/detr"
+prbnetPath = "./prbnet/PRBNet_PyTorch/prb"
 
 sys.path.append(yoloPath)
 sys.path.append(detectorPath)
 sys.path.append(detrPath)
+sys.path.append(prbnetPath)
 
 # print(sys.path)
 
@@ -17,7 +19,7 @@ sys.path.append(detrPath)
 print("Please write the path to the image you want to detect objects in:")
 imagePath = input()
 
-print("Please write the model name you want to use [yolo/detectron2/detr]:")
+print("Please write the model name you want to use [yolo/detectron2/detr/prbnet]:")
 modelName = input()
 
 if modelName == "yolo":
@@ -38,6 +40,16 @@ elif modelName == "detr":
     detector = DETRDetector()
     start_time = time.time()
     detector.onImage(imagePath)
+    print("--- %s seconds ---" % (time.time() - start_time))
+elif modelName == "prbnet":
+    # os.system("conda activate prbnet")
+    # os.system("ls")
+    # print(prbnetPath + "/yolov7-prb.pt")
+    os.chdir(prbnetPath)
+    command = "python3 detect.py --weights yolov7-prb.pt --conf 0.60 --img-size 640 --source ../../../man_cafe.jpg --save-txt"
+    # print(command)
+    start_time = time.time()
+    os.system(command)
     print("--- %s seconds ---" % (time.time() - start_time))
 else:
     print("Please write a valid model name")

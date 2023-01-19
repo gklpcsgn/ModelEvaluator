@@ -20,7 +20,7 @@ Image path cannot be given as an argument yet. It will be added soon. Give the i
 
 | Model                           | AP     | Inf. Time             | 
 | ---                             |:------:| :---:                 |
-| YOLOv7-E6E                      |  56.8  |    18.7 ms (Batch 32) |
+| YOLOv7-E6E                      |  56.8  |    18.7 ms  |
 | DETR                            |  42.0  |    36 ms              |
 | PRBNet                          |  52.5  |    ~20.4ms            |
 | Detectron2 (Faster R-CNN FPN 3x)|  40.2  |   38 ms               | 

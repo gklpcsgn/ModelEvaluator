@@ -1,6 +1,8 @@
 import sys
 import os
 import time
+import glob
+import pandas as pd
 
 yoloPath = "./yolov7/yolov7"
 detectorPath = "./detectron2/detectron2"
@@ -25,8 +27,18 @@ modelName = input()
 if modelName == "yolo":
     start_time = time.time()
     # os.system("conda activate yolov7")
-    os.system("python3" + " " + yoloPath + "/detect.py" + " " + "--weights" + " " + yoloPath + "/yolov7-e6e.pt" + " " + "--conf" + " " + "0.60" + " " + "--img-size" + " " + "640" + " " + "--source" + " " + imagePath + " --save-txt")
+    os.system("python3" + " " + yoloPath + "/detect.py" + " " + "--weights" + " " + yoloPath + "/yolov7-e6e.pt" + " " + "--conf" + " " + "0.60" + " " + "--img-size" + " " + "640" + " " + "--source" + " " + imagePath + " --save-txt" + " --no-trace")
+
+    glob = glob.glob("yolov7_output/exp/*.txt")
+
+    df = pd.concat([pd.read_csv(f, sep=",",header=None) for f in glob])
+    df.to_csv( imagePath + "/output.csv", index=False, header=False)
+    # remove yolov7_output folder
+    os.system("rm -rf yolov7_output")
+
     print("--- Total time : %s seconds ---" % (time.time() - start_time))
+
+
 elif modelName == "detectron2":
     # os.system("conda activate detectron2")
     from Detector import *

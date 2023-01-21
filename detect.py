@@ -44,7 +44,31 @@ elif modelName == "detectron2":
     from Detector import *
     detector = Detector()
     start_time = time.time()
-    detector.onImage(imagePath)
+
+    # for all images in the folder
+    for f in glob.glob(imagePath + "/*"):
+        # if jpg or png or jpeg
+        if f.endswith(".jpg") or f.endswith(".png") or f.endswith(".jpeg"):
+            detector.onImage(f)
+    
+    # remove if output.csv exists
+    if os.path.exists(imagePath + "/output.csv"):
+        os.remove(imagePath + "/output.csv")
+
+    f_glob = glob.glob("detectron2_output/*")
+
+    df = pd.DataFrame()
+    # open each folder and read txt file and append to csv
+    for folder in f_glob:
+        for f in glob.glob(folder + "/*.txt"):
+            df = pd.concat([df, pd.read_csv(f, sep=",",header=None)])
+
+    df.to_csv( imagePath + "/output.csv", index=False, header=False)
+           
+
+    # remove detectron2_output folder
+    os.system("rm -rf detectron2_output")
+    
     print("--- Total time : %s seconds ---" % (time.time() - start_time))
 elif modelName == "detr":
     # os.system("conda activate detr")

@@ -70,7 +70,7 @@ class Detector:
         # get 1 decimal place
         coordinates = np.around(coordinates, decimals=1)
 
-        print(coordinates.shape)
+        # print(coordinates.shape)
         for i in range(coordinates.shape[0]):
             # append name of the image, label_id, x1, y1, x2, y2, xcenter,  ycenter, label, confidence
             temp.append(imagePath.split("/")[-1].split(".")[0])

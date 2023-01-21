@@ -36,7 +36,6 @@ COLORS = [[0.000, 0.447, 0.741], [0.850, 0.325, 0.098], [0.929, 0.694, 0.125],
 
 # standard PyTorch mean-std input image normalization
 
-
 # for output bounding box post-processing
 def box_cxcywh_to_xyxy(x):
     x_c, y_c, w, h = x.unbind(1)
@@ -126,7 +125,7 @@ class DETRDetector():
         label_id = 0
         temp = []
         coordinates = np.around(coordinates, decimals=1)
-        print("")
+        # print("")
         # print(coordinates)
         for i in range(coordinates.shape[0]):
             # append name of the image, label_id, x1, y1, x2, y2, xcenter,  ycenter, label, confidence
@@ -141,7 +140,7 @@ class DETRDetector():
             
             
             name = str(pred_names[i]).lower()
-            print(name)
+            # print(name)
             name_id = "nan"
             for j in range(len(categories)):
                 if categories[j]['name'] == name:
@@ -162,11 +161,11 @@ class DETRDetector():
             # join list items by comma
             temp = ','.join(temp)
 
-            print("--------------------")
-            print(temp)
+            # print("--------------------")
+            # print(temp)
 
-            print(save_path)
-            print("--------------------")
+            # print(save_path)
+            # print("--------------------")
 
             with open(save_path+"/"+"labels.txt", "a") as f:
                 f.write(temp)
@@ -177,4 +176,4 @@ class DETRDetector():
 
         bboxes_scaled = rescale_bboxes(outputs['pred_boxes'][0, keep], im.size)
 
-        plot_results(im, probas[keep], bboxes_scaled,imagePath,save_path)
+        # plot_results(im, probas[keep], bboxes_scaled,imagePath,save_path)

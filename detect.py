@@ -29,6 +29,11 @@ if modelName == "yolo":
     # os.system("conda activate yolov7")
     os.system("python3" + " " + yoloPath + "/detect.py" + " " + "--weights" + " " + yoloPath + "/yolov7-e6e.pt" + " " + "--conf" + " " + "0.60" + " " + "--img-size" + " " + "640" + " " + "--source" + " " + imagePath + " --save-txt" + " --no-trace")
 
+
+    # remove if output.csv exists
+    if os.path.exists(imagePath + "/output.csv"):
+        os.remove(imagePath + "/output.csv")
+
     glob = glob.glob("yolov7_output/exp/*.txt")
 
     df = pd.concat([pd.read_csv(f, sep=",",header=None) for f in glob])
@@ -71,6 +76,11 @@ elif modelName == "detectron2":
     
     print("--- Total time : %s seconds ---" % (time.time() - start_time))
 elif modelName == "detr":
+
+
+    # TODO: WORKS SOOOOO SLOW  *10 min for 456 img.
+
+
     # os.system("conda activate detr")
     from DETRDetector import *
     detector = DETRDetector()
@@ -105,11 +115,28 @@ elif modelName == "prbnet":
     # os.system("conda activate prbnet")
     # os.system("ls")
     # print(prbnetPath + "/yolov7-prb.pt")
+
     os.chdir(prbnetPath)
-    command = "python3 detect.py --weights yolov7-prb.pt --conf 0.60 --img-size 640 --source ../../../man_cafe.jpg --save-txt"
+    command = "python3 detect.py --weights yolov7-prb.pt --conf 0.60 --img-size 640 --source " + imagePath + " --save-txt --nosave"
     # print(command)
+    
     start_time = time.time()
+    
     os.system(command)
+
+    os.chdir("./../../../")
+
+    # remove if output.csv exists
+    if os.path.exists(imagePath + "/output.csv"):
+        os.remove(imagePath + "/output.csv")
+
+    glob = glob.glob("prbnet_output/exp/*.txt")
+
+    df = pd.concat([pd.read_csv(f, sep=",",header=None) for f in glob])
+    df.to_csv( imagePath + "/output.csv", index=False, header=False)
+    # remove prbnet_output folder
+    os.system("rm -rf prbnet_output")
+
     print("--- Total time : %s seconds ---" % (time.time() - start_time))
 else:
     print("Please write a valid model name")

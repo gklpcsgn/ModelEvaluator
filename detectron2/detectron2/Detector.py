@@ -16,7 +16,7 @@ except:
     print("Error: categories.json not found")
 
 class Detector:
-    def __init__(self,confidence_threshold=0.6):
+    def __init__(self,confidence_threshold=0.7):
         self.cfg = get_cfg()
 
         # Load model and weights
@@ -36,7 +36,7 @@ class Detector:
        
 
         v = Visualizer(image[:, :, ::-1],metadata=MetadataCatalog.get(self.cfg.DATASETS.TRAIN[0]),instance_mode=ColorMode.IMAGE_BW)
-        out = v.draw_instance_predictions(outputs["instances"].to("cpu"))
+        # out = v.draw_instance_predictions(outputs["instances"].to("cpu"))
         
         # print(str(boxes))
         # print(str(classes))

@@ -31,4 +31,29 @@ for threshold in np.arange(0.5,1,0.05):
     threshold = round(threshold,2)
     results[threshold] = get_results(detections, ground_truths, iou_thr=threshold)
 
-calc_coco_map(results)
+coco_res = calc_coco_map(results)
+
+import json
+try:
+    with open('../catagories.json') as f:
+        categories = json.load(f)
+except:
+    print("Error: categories.json not found")
+
+# we will create a dataframe for threshold 0.5
+result_df = pd.DataFrame(results[0.5]).T
+
+for i in result_df.index:
+
+    for j in range(len(categories)):
+                if categories[j]['id'] == i:
+                    name = categories[j]['name']
+                    break
+    result_df.loc[i,"class"] = name
+
+result_df.set_index('class',inplace=True)
+result_df.index.name = None
+
+map_df = pd.DataFrame([coco_res[0.5],coco_res[0.75],coco_res["mAP"]],columns=["AP"],index=[0.5,0.75,"mAP"])
+
+

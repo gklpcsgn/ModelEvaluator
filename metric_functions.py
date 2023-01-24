@@ -193,6 +193,11 @@ def get_results(detections, ground_truths, iou_thr=0.5):
         # if ground truth keys does not contain the class,then all detections are false positives
         if i not in ground_truths.keys():
             FP[i] = [1] * detections[i].shape[0]
+            TP[i] = sum(TP[i])
+            FP[i] = sum(FP[i])
+            FN[i] = sum(FN[i])
+            precision[i] = 0  
+            recall[i] = 0
             continue
 
         # convert detections dataframe to dictionary of boxes and scores
@@ -245,10 +250,14 @@ def calc_avg(results):
 # Calculate the precision at every recall value(0 to 1 with a step size of 0.01), then it is repeated for IoU thresholds of 0.55,0.60,…,.95.
 # Average is taken over all the 80 classes and all the 10 thresholds.
 def calc_coco_map(results):
+    out = {}
     mAP = 0
     for threshold in np.arange(0.5,1,0.05):
         threshold = round(threshold,2)
         avg = calc_avg(results[threshold])
+        out[threshold] = avg
         mAP +=avg
         print("mAP for threshold {} is {}".format(threshold,avg))
     print("mAP : " , mAP/10)
+    out["mAP"] = mAP/10
+    return out

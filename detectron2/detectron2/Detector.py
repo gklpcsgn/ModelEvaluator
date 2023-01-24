@@ -16,7 +16,7 @@ except:
     print("Error: categories.json not found")
 
 class Detector:
-    def __init__(self,confidence_threshold=0.7):
+    def __init__(self,confidence_threshold=0.6):
         self.cfg = get_cfg()
 
         # Load model and weights

@@ -90,9 +90,9 @@ class DETRDetector():
         # propagate through the model
         outputs = model(img)
 
-        # keep only predictions with 0.7+ confidence
+        # keep only predictions with 0.6 confidence
         probas = outputs['pred_logits'].softmax(-1)[0, :, :-1]
-        keep = probas.max(-1).values > 0.9
+        keep = probas.max(-1).values > 0.6
         scores = []
         for i in range(len(probas)):
             if keep[i]:

@@ -24,3 +24,6 @@ Give the image path in the terminal when prompted relative to the detect.py file
 | DETR                            |  42.0  |    36 ms   |
 | PRBNet                          |  52.5  |    ~20.4ms |
 | Detectron2 (Faster R-CNN FPN 3x)|  40.2  |   38 ms    | 
+
+
+Use test_metrics.ipynb to test the metrics on your own detections. Input name is hardcoded in the notebook.

@@ -37,7 +37,7 @@ if modelName == "yolo":
     glob = glob.glob("yolov7_output/exp/*.txt")
 
     df = pd.concat([pd.read_csv(f, sep=",",header=None) for f in glob])
-    df.to_csv( imagePath + "/output.csv", index=False, header=False)
+    df.to_csv( imagePath + "/yolo_output.csv", index=False, header=False)
     # remove yolov7_output folder
     os.system("rm -rf yolov7_output")
 
@@ -68,12 +68,11 @@ elif modelName == "detectron2":
         for f in glob.glob(folder + "/*.txt"):
             df = pd.concat([df, pd.read_csv(f, sep=",",header=None)])
 
-    df.to_csv( imagePath + "/output.csv", index=False, header=False)
+    df.to_csv( imagePath + "/detectron2_output.csv", index=False, header=False)
            
 
     # remove detectron2_output folder
     os.system("rm -rf detectron2_output")
-    
     print("--- Total time : %s seconds ---" % (time.time() - start_time))
 elif modelName == "detr":
 
@@ -104,7 +103,7 @@ elif modelName == "detr":
         for f in glob.glob(folder + "/*.txt"):
             df = pd.concat([df, pd.read_csv(f, sep=",",header=None)])
 
-    df.to_csv( imagePath + "/output.csv", index=False, header=False)
+    df.to_csv( imagePath + "/detr_output.csv", index=False, header=False)
            
 
     # remove detectron2_output folder
@@ -133,7 +132,7 @@ elif modelName == "prbnet":
     glob = glob.glob("prbnet_output/exp/*.txt")
 
     df = pd.concat([pd.read_csv(f, sep=",",header=None) for f in glob])
-    df.to_csv( imagePath + "/output.csv", index=False, header=False)
+    df.to_csv( imagePath + "/prbnet_output.csv", index=False, header=False)
     # remove prbnet_output folder
     os.system("rm -rf prbnet_output")
 

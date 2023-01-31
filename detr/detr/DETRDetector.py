@@ -131,10 +131,10 @@ class DETRDetector():
             # append name of the image, label_id, x1, y1, x2, y2, xcenter,  ycenter, label, confidence
             temp.append(imagePath.split("/")[-1].split(".")[0])
             temp.append(label_id)
-            temp.append(coordinates[i][0])
-            temp.append(coordinates[i][1])
             temp.append(coordinates[i][2])
             temp.append(coordinates[i][3])
+            temp.append(coordinates[i][0])
+            temp.append(coordinates[i][1])
             temp.append(np.around((coordinates[i][0]+coordinates[i][2])/2, decimals=1))
             temp.append(np.around((coordinates[i][1]+coordinates[i][3])/2, decimals=1))
             

@@ -2,6 +2,7 @@
 import colorsys
 import logging
 import math
+import os
 import numpy as np
 from enum import Enum, unique
 import cv2
@@ -12,7 +13,7 @@ import pycocotools.mask as mask_util
 import torch
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 from PIL import Image
-
+import json
 from detectron2.data import MetadataCatalog
 from detectron2.structures import BitMasks, Boxes, BoxMode, Keypoints, PolygonMasks, RotatedBoxes
 from detectron2.utils.file_io import PathManager
@@ -23,6 +24,11 @@ logger = logging.getLogger(__name__)
 
 __all__ = ["ColorMode", "VisImage", "Visualizer"]
 
+try:
+    with open('../catagories.json') as f:
+        categories = json.load(f)
+except:
+    print("Error: categories.json not found")
 
 _SMALL_OBJECT_AREA_THRESH = 1000
 _LARGE_MASK_AREA_THRESH = 120000
@@ -379,16 +385,14 @@ class Visualizer:
         )
         self._instance_mode = instance_mode
         self.keypoint_threshold = _KEYPOINT_THRESHOLD
-
-    def draw_instance_predictions(self, predictions):
+    
+    def draw_instance_predictions_default(self, predictions):
         """
         Draw instance-level prediction results on an image.
-
         Args:
             predictions (Instances): the output of an instance detection/segmentation
                 model. Following fields will be used to draw:
                 "pred_boxes", "pred_classes", "scores", "pred_masks" (or "pred_masks_rle").
-
         Returns:
             output (VisImage): image object with visualizations.
         """
@@ -432,8 +436,127 @@ class Visualizer:
             alpha=alpha,
         )
         return self.output
+    
+    def draw_instance_predictions(self, predictions,image_path,output_path):
+        """
+        Draw instance-level prediction results on an image.
 
-    def draw_sem_seg(self, sem_seg, area_threshold=None, alpha=0.8):
+        Args:
+            predictions (Instances): the output of an instance detection/segmentation
+                model. Following fields will be used to draw:
+                "pred_boxes", "pred_classes", "scores", "pred_masks" (or "pred_masks_rle").
+
+        Returns:
+            output (VisImage): image object with visualizations.
+        """
+        boxes = predictions.pred_boxes if predictions.has("pred_boxes") else None
+        scores = predictions.scores if predictions.has("scores") else None
+        classes = predictions.pred_classes.tolist() if predictions.has("pred_classes") else None
+        labels = _create_text_labels(classes, scores, self.metadata.get("thing_classes", None))
+        keypoints = predictions.pred_keypoints if predictions.has("pred_keypoints") else None
+
+        # print(scores)
+
+        class_names = self.metadata.get("thing_classes", None)
+        if class_names is not None:
+            for i in range(len(class_names)):
+                if class_names[i] == "car_(automobile)":
+                    class_names[i] = "car"
+                else: 
+                    class_names[i] = class_names[i].replace("_", " ")
+
+
+        
+        label_id = 0
+        temp = []
+        coordinates = boxes.tensor.cpu().numpy()
+        # get 1 decimal place
+        coordinates = np.around(coordinates, decimals=1)
+
+        # print(coordinates.shape)
+        for i in range(coordinates.shape[0]):
+            # append name of the image, label_id, x1, y1, x2, y2, xcenter,  ycenter, label, confidence
+            temp.append(image_path.split("/")[-1].split(".")[0])
+            temp.append(label_id)
+            temp.append(coordinates[i][0])
+            temp.append(coordinates[i][1])
+            temp.append(coordinates[i][2])
+            temp.append(coordinates[i][3])
+            temp.append(np.around((coordinates[i][0]+coordinates[i][2])/2, decimals=1))
+            temp.append(np.around((coordinates[i][1]+coordinates[i][3])/2, decimals=1))
+
+            name = str(class_names[classes[i]]).lower()
+            name_id = "nan"
+            for j in range(len(categories)):
+                if categories[j]['name'] == name:
+                    name_id = categories[j]['id']
+                    break
+            if name_id == "nan":
+                print("Error: name not found ", name)
+                break
+            # print(name_id)
+            # print(name)
+            temp.append(name_id)
+
+            print(temp)
+
+
+            temp.append(np.around(scores[i].item(), decimals=4))
+
+            label_id += 1
+            # convert to string
+            temp = [str(x) for x in temp]
+            # join list items by comma
+            temp = ','.join(temp)
+
+            # print(temp)
+
+            if not os.path.exists(output_path):
+                os.makedirs(output_path)
+
+            with open(output_path+"/"+"detic_output.csv", "a") as f:
+                f.write(temp)
+                f.write("\n")
+
+            temp = []  # clear list
+
+
+        if predictions.has("pred_masks"):
+            masks = np.asarray(predictions.pred_masks)
+            masks = [GenericMask(x, self.output.height, self.output.width) for x in masks]
+        else:
+            masks = None
+
+        if self._instance_mode == ColorMode.SEGMENTATION and self.metadata.get("thing_colors"):
+            colors = [
+                self._jitter([x / 255 for x in self.metadata.thing_colors[c]]) for c in classes
+            ]
+            alpha = 0.8
+        else:
+            colors = None
+            alpha = 0.5
+
+        if self._instance_mode == ColorMode.IMAGE_BW:
+            self.output.reset_image(
+                self._create_grayscale_image(
+                    (predictions.pred_masks.any(dim=0) > 0).numpy()
+                    if predictions.has("pred_masks")
+                    else None
+                )
+            )
+            alpha = 0.3
+
+        self.overlay_instances(
+            masks=masks,
+            boxes=boxes,
+            labels=labels,
+            keypoints=keypoints,
+            assigned_colors=colors,
+            alpha=alpha,
+        )
+        return self.output
+
+    def draw_sem_seg(self, sem_seg, area_threshold=None, alpha=0.8,image_name="",output_path=None):
         """
         Draw semantic segmentation predictions/labels.
 
@@ -446,6 +569,7 @@ class Visualizer:
         Returns:
             output (VisImage): image object with visualizations.
         """
+        
         if isinstance(sem_seg, torch.Tensor):
             sem_seg = sem_seg.numpy()
         labels, areas = np.unique(sem_seg, return_counts=True)
@@ -467,8 +591,70 @@ class Visualizer:
                 alpha=alpha,
                 area_threshold=area_threshold,
             )
-        return self.output
+            bounding_boxes = []
+            binary_image = binary_mask
+            contours, hierarchy = cv2.findContours(binary_image, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
+            for contour in contours:
+                x, y, w, h = cv2.boundingRect(contour)
+                bounding_boxes.append([x, y, x + w, y + h])
+
+            print(bounding_boxes)
+            label_id = 0
+            temp = []
+            for i in range(len(bounding_boxes)):
+  
+                temp.append(image_name)
+                temp.append(label_id)
+                temp.append(bounding_boxes[i][0])
+                temp.append(bounding_boxes[i][1])
+                temp.append(bounding_boxes[i][2])
+                temp.append(bounding_boxes[i][3])
+                temp.append(np.around((bounding_boxes[i][0]+bounding_boxes[i][2])/2, decimals=1))
+                temp.append(np.around((bounding_boxes[i][1]+bounding_boxes[i][3])/2, decimals=1))
+
+                name = self.metadata.stuff_classes[label]
+                
+                name_id = "nan"
+                for j in range(len(categories)):
+                    if categories[j]['name'] == name:
+                        name_id = categories[j]['id']
+                        break
+                if name_id == "nan":
+                    print("Error: name not found")
+                    break
+                # print(name_id)
+                # print(name)
+                temp.append(name_id)
+                
+                # append confidence score
+                temp.append(np.around(1, decimals=4))
+
+                label_id += 1
+                # convert to string
+                temp = [str(x) for x in temp]
+                # join list items by comma
+                temp = ','.join(temp)
+
+                print(output_path)
+
+                if output_path is None:
+                    with open(os.chdir()+"/"+"maskdino-labels.txt", "a") as f:
+                        f.write(temp)
+                        f.write("\n")
+                    f.close()
+                elif output_path.endswith("/"):
+                    with open(output_path + "maskdino_output.csv", "a") as f:
+                        f.write(temp)
+                        f.write("\n")
+                    f.close()
+                else:
+                    with open(output_path + ".csv", "a") as f:
+                        f.write(temp)
+                        f.write("\n")
+                    f.close()
+                temp = []  # clear list
+        return self.output
     def draw_panoptic_seg(self, panoptic_seg, segments_info, area_threshold=None, alpha=0.7):
         """
         Draw panoptic prediction annotations or results.

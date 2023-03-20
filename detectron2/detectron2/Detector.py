@@ -28,7 +28,7 @@ class Detector:
 
         self.predictor = DefaultPredictor(self.cfg)
 
-    def onImage(self,imagePath):
+    def onImage(self,imagePath,save_img=False,save_img_path=None,model_name=None):
         image = cv2.imread(imagePath)
         outputs = self.predictor(image)
         boxes = outputs["instances"].pred_boxes
@@ -36,7 +36,7 @@ class Detector:
        
 
         v = Visualizer(image[:, :, ::-1],metadata=MetadataCatalog.get(self.cfg.DATASETS.TRAIN[0]),instance_mode=ColorMode.IMAGE_BW)
-        # out = v.draw_instance_predictions(outputs["instances"].to("cpu"))
+        
         
         # print(str(boxes))
         # print(str(classes))
@@ -105,14 +105,26 @@ class Detector:
 
             # print(temp)
 
-            with open(save_path+"/"+"labels.txt", "a") as f:
-                f.write(temp)
-                f.write("\n")
-
+            if save_img_path is None:
+                with open(save_path+"/"+"labels.txt", "a") as f:
+                    f.write(temp)
+                    f.write("\n")
+                f.close()
+            else:
+                with open(save_img_path, "a") as f:
+                    f.write(temp)
+                    f.write("\n")
+                f.close()
             temp = []  # clear list
 
 
 
-
+        
+        # if save_img:
+        #     print("Saving image...")
+        #     print(save_img_path)
+        #     out = v.draw_instance_predictions_default(outputs["instances"].to("cpu"))
+        #     cv2.imwrite(save_img_path,out.get_image()[:, :, ::-1])
+        
         # cv2.imshow("image",out.get_image()[:, :, ::-1])
         # cv2.waitKey(0)

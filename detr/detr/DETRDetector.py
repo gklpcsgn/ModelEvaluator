@@ -1,3 +1,4 @@
+from detectron2.utils.visualizer import ColorMode, GenericMask, _create_text_labels
 import matplotlib.pyplot as plt
 import torch
 from torchvision.models import resnet50
@@ -49,9 +50,9 @@ def rescale_bboxes(out_bbox, size):
     b = b * torch.tensor([img_w, img_h, img_w, img_h], dtype=torch.float32)
     return b
 
-def plot_results(pil_img, prob, boxes,imagePath,save_path):
-    plt.figure(figsize=(16,10))
-    plt.imshow(pil_img)
+def plot_results(pil_img, prob, boxes,save_img_path):
+    plt.figure()
+    # plt.imshow(pil_img)
     ax = plt.gca()
     colors = COLORS * 100
     for p, (xmin, ymin, xmax, ymax), c in zip(prob, boxes.tolist(), colors):
@@ -63,9 +64,61 @@ def plot_results(pil_img, prob, boxes,imagePath,save_path):
         ax.text(xmin, ymin, text, fontsize=15,
                 bbox=dict(facecolor='yellow', alpha=0.5))
     plt.axis('off')
-    # save image
+    plt.savefig(save_img_path)
     
-    plt.savefig(save_path+"/"+imagePath.split("/")[-1].split(".")[0]+".jpg")
+
+def draw_instance_predictions_default(self, predictions):
+    """
+    Draw instance-level prediction results on an image.
+    Args:
+        predictions (Instances): the output of an instance detection/segmentation
+            model. Following fields will be used to draw:
+            "pred_boxes", "pred_classes", "scores", "pred_masks" (or "pred_masks_rle").
+    Returns:
+        output (VisImage): image object with visualizations.
+    """
+    boxes = predictions.pred_boxes if predictions.has("pred_boxes") else None
+    scores = predictions.scores if predictions.has("scores") else None
+    classes = predictions.pred_classes.tolist() if predictions.has("pred_classes") else None
+    labels = _create_text_labels(classes, scores, self.metadata.get("thing_classes", None))
+    keypoints = predictions.pred_keypoints if predictions.has("pred_keypoints") else None
+
+    if predictions.has("pred_masks"):
+        masks = np.asarray(predictions.pred_masks)
+        masks = [GenericMask(x, self.output.height, self.output.width) for x in masks]
+    else:
+        masks = None
+
+    if self._instance_mode == ColorMode.SEGMENTATION and self.metadata.get("thing_colors"):
+        colors = [
+            self._jitter([x / 255 for x in self.metadata.thing_colors[c]]) for c in classes
+        ]
+        alpha = 0.8
+    else:
+        colors = None
+        alpha = 0.5
+
+    if self._instance_mode == ColorMode.IMAGE_BW:
+        self.output.reset_image(
+            self._create_grayscale_image(
+                (predictions.pred_masks.any(dim=0) > 0).numpy()
+                if predictions.has("pred_masks")
+                else None
+            )
+        )
+        alpha = 0.3
+
+    self.overlay_instances(
+        masks=masks,
+        boxes=boxes,
+        labels=labels,
+        keypoints=keypoints,
+        assigned_colors=colors,
+        alpha=alpha,
+    )
+    return self.output
+
+    
 
 class DETRDetector():
     def __init__(self):
@@ -79,11 +132,12 @@ class DETRDetector():
         self.transform = transform
         model.eval();
         
-    def onImage(self,imagePath):
+    def onImage(self,imagePath,save_csv_path=None,model_name="detr"):
         # image = cv2.imread(imagePath)
+        
+        
         im = Image.open(imagePath)
         model = self.model
-
         # mean-std normalize the input image (batch-size: 1)
         img = self.transform(im).unsqueeze(0)
 
@@ -92,7 +146,7 @@ class DETRDetector():
 
         # keep only predictions with 0.6 confidence
         probas = outputs['pred_logits'].softmax(-1)[0, :, :-1]
-        keep = probas.max(-1).values > 0.6
+        keep = probas.max(-1).values > 0.7
         scores = []
         for i in range(len(probas)):
             if keep[i]:
@@ -114,14 +168,14 @@ class DETRDetector():
 
             save_path = "detr_output/"+imagePath.split("/")[-1].split(".")[0]+"_"+str(i)
             os.makedirs(save_path)
-
-        coordinates = outputs['pred_boxes'][0, keep].cpu().numpy()
-        for i in range(len(coordinates)):
-            coordinates[i][0] = coordinates[i][0]*im.size[1]
-            coordinates[i][1] = coordinates[i][1]*im.size[0]
-            coordinates[i][2] = coordinates[i][2]*im.size[1]
-            coordinates[i][3] = coordinates[i][3]*im.size[0]
         
+        
+        bboxes_scaled = rescale_bboxes(outputs['pred_boxes'][0, keep], im.size)
+
+        coordinates = bboxes_scaled.cpu().numpy()
+
+        print(coordinates)
+
         label_id = 0
         temp = []
         coordinates = np.around(coordinates, decimals=1)
@@ -166,14 +220,22 @@ class DETRDetector():
 
             # print(save_path)
             # print("--------------------")
-
-            with open(save_path+"/"+"labels.txt", "a") as f:
-                f.write(temp)
-                f.write("\n")
-
+            if save_csv_path is None:
+                with open(save_path+"/"+"labels.txt", "a") as f:
+                    f.write(temp)
+                    f.write("\n")
+                f.close()
+            else:
+                with open(save_csv_path, "a") as f:
+                    f.write(temp)
+                    f.write("\n")
+                f.close()
             temp = []  # clear list
 
 
-        bboxes_scaled = rescale_bboxes(outputs['pred_boxes'][0, keep], im.size)
+        # bboxes_scaled = rescale_bboxes(outputs['pred_boxes'][0, keep], im.size)
+        # print(bboxes_scaled.cpu().numpy())
+        # print(outputs['pred_boxes'][0, keep].cpu().numpy())
 
-        # plot_results(im, probas[keep], bboxes_scaled,imagePath,save_path)
+        # plot_results(im, probas[keep], bboxes_scaled,save_img_path)
+        

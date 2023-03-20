@@ -1,10 +1,9 @@
-from detr.detr.DETRDetector import *
+from DETRDetector import *
 import time
 
-detector = Detector()
+detector = DETRDetector()
 
 # print time
-
 
 start_time = time.time()
 detector.onImage("/media/gklpcsgn/CE623CD9623CC84B/TYX/man_cafe.jpg")

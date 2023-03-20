@@ -8,6 +8,7 @@ yoloPath = "./yolov7/yolov7"
 detectorPath = "./detectron2/detectron2"
 detrPath = "./detr/detr"
 prbnetPath = "./prbnet/PRBNet_PyTorch/prb"
+maskdinoPath = "./MaskDINO/demo"
 
 sys.path.append(yoloPath)
 sys.path.append(detectorPath)
@@ -20,21 +21,31 @@ sys.path.append(prbnetPath)
 
 print("Please write the path to the image you want to detect objects in:")
 imagePath = input()
-
-print("Please write the model name you want to use [yolo/detectron2/detr/prbnet]:")
+print("Please write the model name you want to use [yolo/detectron2/detr/prbnet/maskdino]:")
 modelName = input()
 
-if modelName == "yolo":
+inputfolder = "/".join(imagePath.split("/")[:-1])
+
+if modelName == "maskdino":
+    dataset = input("Please write the dataset name you want to use [ade20k/coco/cityscapes]:")
+    if dataset == "ade20k":
+        os.system("python3" + " " + maskdinoPath + "/demo.py" + " " + "--output" + " " + inputfolder + "/maskdino_output" + " " + "--config-file" + " " + maskdinoPath + "/../configs/ade20k/semantic-segmentation/maskdino_R50_bs16_160k_steplr.yaml" + " " + "--input" + " " + imagePath + " --opts MODEL.WEIGHTS " + maskdinoPath + "/../models/ade20k_48.7miou.pth")
+
+    elif dataset == "cityscapes":
+        os.system("python3" + " " + maskdinoPath + "/demo.py" + " " + "--output" + " " + inputfolder + "/maskdino_output" + " " + "--config-file" + " " + maskdinoPath + "/../configs/cityscapes/semantic-segmentation/maskdino_R50_bs16_90k_steplr.yaml" + " " + "--input" + " " + imagePath + " --opts MODEL.WEIGHTS " + maskdinoPath + "/../maskdino_r50_50ep_100q_celoss_hid1024_3s_semantic_cityscapes_79.8miou.pth")
+
+    print("Output saved in " + inputfolder + "/maskdino_output")
+
+
+elif modelName == "yolo":
     start_time = time.time()
     # os.system("conda activate yolov7")
     os.system("python3" + " " + yoloPath + "/detect.py" + " " + "--weights" + " " + yoloPath + "/yolov7-e6e.pt" + " " + "--conf" + " " + "0.60" + " " + "--img-size" + " " + "640" + " " + "--source" + " " + imagePath + " --save-txt" + " --no-trace")
-
-
     # remove if output.csv exists
     if os.path.exists(imagePath + "/output.csv"):
         os.remove(imagePath + "/output.csv")
 
-    glob = glob.glob("yolov7_output/exp/*.txt")
+    glob = glob.glob("yolov7_output/exp/*.csv")
 
     df = pd.concat([pd.read_csv(f, sep=",",header=None) for f in glob])
     df.to_csv( imagePath + "/yolo_output.csv", index=False, header=False)
@@ -67,7 +78,7 @@ elif modelName == "detectron2":
     for folder in f_glob:
         for f in glob.glob(folder + "/*.txt"):
             df = pd.concat([df, pd.read_csv(f, sep=",",header=None)])
-
+    print(imagePath)
     df.to_csv( imagePath + "/detectron2_output.csv", index=False, header=False)
            
 
@@ -107,7 +118,7 @@ elif modelName == "detr":
            
 
     # remove detectron2_output folder
-    os.system("rm -rf detr_output")
+    # os.system("rm -rf detr_output")
     print("--- Total time : %s seconds ---" % (time.time() - start_time))
 
 elif modelName == "prbnet":
@@ -137,5 +148,19 @@ elif modelName == "prbnet":
     os.system("rm -rf prbnet_output")
 
     print("--- Total time : %s seconds ---" % (time.time() - start_time))
+
+elif modelName == "MaskDino - ade20k":
+    folderOutputPath = os.getcwd() + "/maskdino-ade20k_output/"
+    os.mkdir(folderOutputPath)
+    os.system("python3 " + maskdinoPath + "/demo.py " + "--config-file " + maskdinoPath + "/../configs/ade20k/semantic-segmentation/maskdino_R50_bs16_160k_steplr.yaml " + "--input " + imagePath + "/*.png" + " --no-image-output --output " + folderOutputPath + " --opts MODEL.WEIGHTS " + maskdinoPath + "/../models/ade20k_48.7miou.pth")
+
+elif modelName == "MaskDino - cityscapes":
+
+    folderOutputPath = os.getcwd() + "/maskdino-cityscapes_output/"
+    os.mkdir(folderOutputPath)            
+    os.system("python3 " + maskdinoPath + "/demo.py " + "--config-file " + maskdinoPath + "/../configs/cityscapes/semantic-segmentation/maskdino_R50_bs16_90k_steplr.yaml " + "--input " + imagePath + "/*.png" + " --no-image-output --output " + folderOutputPath + " --opts MODEL.WEIGHTS " + maskdinoPath + "/../maskdino_r50_50ep_100q_celoss_hid1024_3s_semantic_cityscapes_79.8miou.pth")
+
 else:
     print("Please write a valid model name")
+
+

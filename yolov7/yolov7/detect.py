@@ -28,15 +28,20 @@ except:
 
 def detect(save_img=False):
     source, weights, view_img, save_txt, imgsz, trace = opt.source, opt.weights, opt.view_img, opt.save_txt, opt.img_size, not opt.no_trace
+    save_img = opt.save_img
     is_folder = opt.folder
     print(is_folder)
-    save_img = not opt.nosave and not source.endswith('.txt')  # save inference images
+    # save_img = not opt.nosave and not source.endswith('.txt')  # save inference images
     webcam = source.isnumeric() or source.endswith('.txt') or source.lower().startswith(
         ('rtsp://', 'rtmp://', 'http://', 'https://'))
 
     # Directories
     save_dir = Path(increment_path(Path(opt.project) / opt.name, exist_ok=opt.exist_ok))  # increment run
     (save_dir  if save_txt else save_dir).mkdir(parents=True, exist_ok=True)  # make dir
+    save_img_dir = opt.save_img_path
+    save_csv_dir = opt.save_csv_path
+    print("----------------------")
+    print(save_img_dir)
 
     # Initialize
     set_logging()
@@ -186,10 +191,17 @@ def detect(save_img=False):
                         # join list items by comma
                         temp = ','.join(temp)
 
-                        # print(txt_path)
-                        with open(txt_path + '.txt', 'a') as f:
-                            f.write(temp)
-                            f.write('\n')
+                        if(is_folder):
+                            with open(txt_path + '.txt', 'a') as f:
+                                f.write(temp)
+                                f.write('\n')
+                            f.close()
+                        else:
+                            # print(txt_path)
+                            with open(save_csv_dir, 'a') as f:
+                                f.write(temp)
+                                f.write('\n')
+                            f.close()
 
                         # with open(txt_path + '.txt', 'a') as f:
                         #     f.write(('%g ' * len(line)).rstrip() % line + '\n')
@@ -209,7 +221,7 @@ def detect(save_img=False):
             # Save results (image with detections)
             if save_img:
                 if dataset.mode == 'image':
-                    cv2.imwrite(save_path, im0)
+                    cv2.imwrite(save_img_dir, im0)
                     print(f" The image with the result is saved in: {save_path}")
                 else:  # 'video' or 'stream'
                     if vid_path != save_path:  # new video
@@ -243,6 +255,9 @@ if __name__ == '__main__':
     parser.add_argument('--device', default='', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
     parser.add_argument('--view-img', action='store_true', help='display results')
     parser.add_argument('--save-txt', action='store_true', help='save results to *.txt')
+    parser.add_argument('--save-img', action='store_true', help='save results to *.jpg')
+    parser.add_argument('--save-img-path', type=str, default='inference/output', help='path to save images')
+    parser.add_argument('--save-csv-path', type=str, help='save results to *.csv')
     parser.add_argument('--save-conf', action='store_true', help='save confidences in --save-txt labels')
     parser.add_argument('--nosave', action='store_true', help='do not save images/videos')
     parser.add_argument('--classes', nargs='+', type=int, help='filter by class: --class 0, or --class 0 2 3')

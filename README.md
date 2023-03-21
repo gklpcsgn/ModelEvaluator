@@ -28,12 +28,13 @@ Give the image path in the terminal when prompted relative to the detect.py file
 
 ## Evaluation
 
-In main folder, run `main.py` file. It will start the program. I do not recommend running the detect.py file because it contains experimental code.
+In main folder, run `main.py` file. It will start the program. I do not recommend running the `detect.py` file because it contains experimental code.
 
 ## Testing Metrics
 
 `metric_tester.py` file contains the code to test the metrics. It is not used in the main program. Detections and ground truth file path are given as arguments. The detections file should be in the below format:
-["image_id","object_id","x_top","y_top","x_bottom","y_bottom","x_center","y_center","class","confidence"]
+"image_id","object_id","x_top","y_top","x_bottom","y_bottom","x_center","y_center","class","confidence" 
+
 The ground truth file is the same as the detections file but without the confidence score. The output is the class based recall and precision, and the overall mAP@50, mAP@75, mAP score.
 
 #### Note: Format of the models are changed to the above format. The original format for the models are not supported or obtainable anymore.

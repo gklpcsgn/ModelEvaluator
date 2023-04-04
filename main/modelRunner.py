@@ -12,7 +12,7 @@ detectorPath = "./detectron2/detectron2"
 detrPath = "./detr/detr"
 prbnetPath = "./prbnet/PRBNet_PyTorch/prb"
 maskdinoPath = "./MaskDINO/demo"
-outputPath = "./tkinter/output"
+outputPath = "./main/output"
 
 sys.path.append(yoloPath)
 sys.path.append(detectorPath)
@@ -159,7 +159,7 @@ class ModelRunner:
             currentYear = datetime.now().year
             current_time = datetime.now().strftime("%H-%M-%S")
             tag = str(currentDay) + "-" + str(currentMonth) + "-" + str(currentYear) + "_" + current_time
-            folderOutputPath = os.getcwd() + "/tkinter/output/maskdino-ade20k_output_" + tag
+            folderOutputPath = os.getcwd() + "/main/output/maskdino-ade20k_output_" + tag
             os.mkdir(folderOutputPath)
             os.system("python3 " + maskdinoPath + "/demo.py " + "--config-file " + maskdinoPath + "/../configs/ade20k/semantic-segmentation/maskdino_R50_bs16_160k_steplr.yaml " + "--input " + self.inputfolder + "/*.png" + " --output " + folderOutputPath + " --opts MODEL.WEIGHTS " + maskdinoPath + "/../models/ade20k_48.7miou.pth")
 
@@ -170,7 +170,7 @@ class ModelRunner:
             currentYear = datetime.now().year
             current_time = datetime.now().strftime("%H-%M-%S")
             tag = str(currentDay) + "-" + str(currentMonth) + "-" + str(currentYear) + "_" + current_time
-            folderOutputPath = os.getcwd() + "/tkinter/output/maskdino-cityscapes_output_" + tag
+            folderOutputPath = os.getcwd() + "/main/output/maskdino-cityscapes_output_" + tag
             os.mkdir(folderOutputPath)
             os.system("python3 " + maskdinoPath + "/demo.py " + "--config-file " + maskdinoPath + "/../configs/cityscapes/semantic-segmentation/maskdino_R50_bs16_90k_steplr.yaml " + "--input " + self.inputfolder + "/*.png" + " --output " + folderOutputPath + " --opts MODEL.WEIGHTS " + maskdinoPath + "/../maskdino_r50_50ep_100q_celoss_hid1024_3s_semantic_cityscapes_79.8miou.pth")            
         
@@ -185,7 +185,7 @@ class ModelRunner:
             os.system("python3" + " " + yoloPath + "/detect.py" + " " + "--weights" + " " + yoloPath + "/yolov7-e6e.pt" + " " + "--conf" + " " + "0.60" + " " + "--img-size" + " " + "640" + " " + "--source" + " " + self.inputfolder + " --save-txt --no-trace --folder")
 
             files = glob.glob("yolov7_output/exp/*.txt")
-            folderOutputPath = os.getcwd() + "/tkinter/output/yolov7_output_" + tag
+            folderOutputPath = os.getcwd() + "/main/output/yolov7_output_" + tag
             os.mkdir(folderOutputPath)
             df = pd.concat([pd.read_csv(f, sep=",",header=None) for f in files])
             df.to_csv( folderOutputPath + "/yolov7_output_" + tag + ".csv", index=False, header=False)
@@ -198,7 +198,7 @@ class ModelRunner:
             currentYear = datetime.now().year
             current_time = datetime.now().strftime("%H-%M-%S")
             tag = str(currentDay) + "-" + str(currentMonth) + "-" + str(currentYear) + "_" + current_time
-            folderOutputPath = os.getcwd() + "/tkinter/output/detectron2_output_" + tag
+            folderOutputPath = os.getcwd() + "/main/output/detectron2_output_" + tag
             os.mkdir(folderOutputPath)
             # start_time = time.time()
             detector = Detector()
@@ -232,7 +232,7 @@ class ModelRunner:
             currentYear = datetime.now().year
             current_time = datetime.now().strftime("%H-%M-%S")
             tag = str(currentDay) + "-" + str(currentMonth) + "-" + str(currentYear) + "_" + current_time
-            folderOutputPath = os.getcwd() + "/tkinter/output/detr_output_" + tag
+            folderOutputPath = os.getcwd() + "/main/output/detr_output_" + tag
             os.mkdir(folderOutputPath)
             detector = DETRDetector()
 
@@ -263,7 +263,7 @@ class ModelRunner:
             currentYear = datetime.now().year
             current_time = datetime.now().strftime("%H-%M-%S")
             tag = str(currentDay) + "-" + str(currentMonth) + "-" + str(currentYear) + "_" + current_time
-            folderOutputPath = os.getcwd() + "/tkinter/output/prbnet_output_" + tag
+            folderOutputPath = os.getcwd() + "/main/output/prbnet_output_" + tag
             os.mkdir(folderOutputPath)
             os.chdir(prbnetPath)
             

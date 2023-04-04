@@ -127,7 +127,7 @@ class FolderSelector:
     def on_select_label_click(self):
         # ask the user to select a csv file from the output folder
         # open the file dialog
-        self.current_label_file = filedialog.askopenfilename(initialdir=os.getcwd() + "/tkinter/output", title="Select Label File", filetypes=(("csv files", "*.csv"), ("all files", "*.*")))
+        self.current_label_file = filedialog.askopenfilename(initialdir=os.getcwd() + "/main/output", title="Select Label File", filetypes=(("csv files", "*.csv"), ("all files", "*.*")))
         
         self.update_labels(self.current_label_file)
 
@@ -255,7 +255,7 @@ class FolderSelector:
             self.run_folder_button.config(state=tk.DISABLED)
 
         # if output folder is empty, disable the show prediction button
-        files = os.listdir("tkinter/output/")
+        files = os.listdir("main/output/")
         if len(files) == 0:
             self.select_label.config(state=tk.DISABLED)
         else:

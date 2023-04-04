@@ -1,17 +1,18 @@
-
-import argparse
 import numpy as np
-import os
-import glob
-import json
 import pandas as pd
-from copy import deepcopy
-# create a global dictionary of dataframes
+import json
+
 global detections
 detections = {}
 global ground_truths
 ground_truths = {}
 
+try:
+    with open("../catagories.json") as f:
+        categories = json.load(f)
+except:
+    print("Error: categories.json not found")
+    
 def detection_df_to_boxes(outputs):
     '''
     Convert ground truth dataframe to dictionary of boxes
@@ -44,6 +45,7 @@ def detection_df_to_boxes(outputs):
             temp_rows = pd.DataFrame()
     return output_dict
 
+
 def gt_df_to_boxes(annot):
     '''
     Convert ground truth dataframe to dictionary of boxes
@@ -72,6 +74,7 @@ def gt_df_to_boxes(annot):
             output_dict[image_id] = {"boxes":boxes}
             temp_rows = pd.DataFrame()
     return output_dict
+
 
 def calc_iou( gt_bbox, pred_bbox):
     '''
@@ -116,6 +119,7 @@ def calc_iou( gt_bbox, pred_bbox):
     union_area = (GT_bbox_area + Pred_bbox_area - intersection_area)
    
     return intersection_area/union_area
+
 
 def get_single_image_results(gt_boxes, pred_boxes, iou_thr):
     """Calculates number of true_pos, false_pos, false_neg from single batch of boxes.
@@ -226,18 +230,15 @@ def get_results(detections, ground_truths, iou_thr=0.5):
             FP[i].append(results["false_positive"])
             FN[i].append(results["false_negative"])
 
+
         TP[i] = sum(TP[i])
         FP[i] = sum(FP[i])
         FN[i] = sum(FN[i])
-        
-        if (TP[i] + FP[i]) == 0:
+        if TP[i] == 0:
             precision[i] = 0
-        else:
-            precision[i] = TP[i] / (TP[i] + FP[i])  
-        
-        if (TP[i] + FN[i]) == 0:
             recall[i] = 0
         else:
+            precision[i] = TP[i] / (TP[i] + FP[i])  
             recall[i] = TP[i] / (TP[i] + FN[i])
             
         # print("class : ",i)
@@ -250,6 +251,7 @@ def get_results(detections, ground_truths, iou_thr=0.5):
     for i in detections.keys():
         out_dict[i] = {"TP":TP[i],"FP":FP[i],"FN":FN[i],"precision":precision[i],"recall":recall[i]}
     return out_dict
+
 
 def calc_avg(results):
     avg = 0
@@ -272,88 +274,103 @@ def calc_coco_map(results):
         avg = calc_avg(results[threshold])
         out[threshold] = avg
         mAP +=avg
-        print("mAP for threshold {} is {}".format(threshold,avg))
-    print("mAP : " , mAP/10)
+    #     print("mAP for threshold {} is {}".format(threshold,avg))
+    # print("mAP : " , mAP/10)
     out["mAP"] = mAP/10
     return out
 
-def get_parser():
-    parser = argparse.ArgumentParser(description="maskdino demo for builtin configs")
-    parser.add_argument("--detections",type=str, help="path to detections csv file")
-    parser.add_argument("--ground-truths",type=str ,help="path to ground truths csv file")
-    parser.add_argument("--categories",type=str,default="../catagories.json",help="path to categories json file (default ../catagories.json)")
-    return parser
-args = get_parser().parse_args()
+def get_metric_results(dets,ground_truth):
+    global detections
+    global ground_truths
+    
+    detections = {}
+    ground_truths = {}
+    
+    results = {}
+    out = {}
+    
+    det = dets
+    annot = ground_truth
+    # check if the format is correct
+
+    if det.shape[0] == 0:
+        # print("detections file is empty")
+        return None
+
+    # if annot.shape[0] == 0:
+    #     TP = 0
+    #     # all detections are false positives
+    #     FP = det.shape[0]
+    #     FN = 0
+    #     precision = 0
+    #     recall = 0
+    #     out["overall"] = {"TP":TP,"FP":FP,"FN":FN,"precision":precision,"recall":recall}
 
 
-categories_path = args.categories
-try:
-    with open(categories_path) as f:
-        categories = json.load(f)
-except:
-    print("Error: categories.json not found")
+   
+    if det.shape[1] != 10:
+        print(det)
+        print("detections file format is incorrect")
+    
+    det.columns = ["image_id","object_id","x_top","y_top","x_bottom","y_bottom","x_center","y_center","class","confidence"]
+    annot.columns = ["image_id","object_id","x_top","y_top","x_bottom","y_bottom","x_center","y_center","class"]
+
+    det = det[det["class"]!=1001]
+    det = det[det["class"]!=-1]
+
+    annot = annot[annot["class"]!=1001]
+    annot = annot[annot["class"]!=-1]
+
+    # print(det["class"].unique())
+    # create a dataframe for each class
+    for i in det["class"].unique():
+        # add dataframe to global detections
+        detections[i] = det[det["class"] == i].reset_index(drop=True)
 
 
-# take detections and ground truth as input from --detections and --ground-truths
-det = pd.read_csv(args.detections,header=None)
-# det = pd.read_csv("/media/gklpcsgn/CE623CD9623CC84B/TYX/ModelEvaluator/maskdino-cityscapes_output/maskdino_output.csv",header=None)
-
-# check if the format is correct
-if det.shape[1] != 10:
-    print("detections file format is incorrect")
-    exit()
-det.columns = ["image_id","object_id","x_top","y_top","x_bottom","y_bottom","x_center","y_center","class","confidence"]
-
-# remove class 1001
-det = det[det["class"]!=1001]
-
-# # switch x_top and x_bottom if x_top > x_bottom
-# det["x_top"],det["x_bottom"] = np.where(det["x_top"] > det["x_bottom"],(det["x_bottom"],det["x_top"]),(det["x_top"],det["x_bottom"]))
-# # switch y_top and y_bottom if y_top > y_bottom
-# det["y_top"],det["y_bottom"] = np.where(det["y_top"] > det["y_bottom"],(det["y_bottom"],det["y_top"]),(det["y_top"],det["y_bottom"]))
+    for i in annot["class"].unique():
+        # add dataframe to global ground_truths
+        ground_truths[i] = annot[annot["class"] == i].reset_index(drop=True)
 
 
-# create a dataframe for each class
-for i in det["class"].unique():
-    # add dataframe to global detections
-    detections[i] = det[det["class"] == i].reset_index(drop=True)
+    for threshold in np.arange(0.5,1,0.05):
+        threshold = round(threshold,2)
+        results[threshold] = get_results(detections, ground_truths, iou_thr=threshold)
 
-# annot = pd.read_csv("annot-test.csv")
-annot = pd.read_csv(args.ground_truths,header=None)
-annot.columns = ["image_id","object_id","x_top","y_top","x_bottom","y_bottom","x_center","y_center","class"]
+    coco_res = calc_coco_map(results)
 
-for i in annot["class"].unique():
-    # add dataframe to global ground_truths
-    ground_truths[i] = annot[annot["class"] == i].reset_index(drop=True)
+    # we will create a dataframe for threshold 0.5
+    class_based_out = pd.DataFrame(results[0.5]).T
 
-results = {}
+    out["class_based"] = class_based_out
 
-for threshold in np.arange(0.5,1,0.05):
-    threshold = round(threshold,2)
-    results[threshold] = get_results(detections, ground_truths, iou_thr=threshold)
+    # calculate overall precision and recall
+    TP = class_based_out["TP"].sum()
+    FP = class_based_out["FP"].sum()
+    FN = class_based_out["FN"].sum()
 
-coco_res = calc_coco_map(results)
+    if TP == 0:
+        precision = 0
+        recall = 0
+    else:
+        precision = TP / (TP + FP)
+        recall = TP / (TP + FN)
 
-# we will create a dataframe for threshold 0.5
-result_df = pd.DataFrame(results[0.5]).T
+    out["overall"] = {"TP":TP,"FP":FP,"FN":FN,"precision":precision,"recall":recall}
 
-for i in result_df.index:
+    for i in class_based_out.index:
 
-    for j in range(len(categories)):
-                if categories[j]['id'] == i:
-                    name = categories[j]['name']
-                    break
-    result_df.loc[i,"class"] = name
+        for j in range(len(categories)):
+                    if categories[j]['id'] == i:
+                        name = categories[j]['name']
+                        break
+        class_based_out.loc[i,"class"] = name
 
-result_df.set_index('class',inplace=True)
-result_df.index.name = None
+    class_based_out.set_index('class',inplace=True)
+    class_based_out.index.name = None
 
-second_result = pd.DataFrame([coco_res[0.5],coco_res[0.75],coco_res["mAP"]],columns=["AP"],index=[0.5,0.75,"mAP"])
+    map_result = pd.DataFrame([coco_res[0.5],coco_res[0.75],coco_res["mAP"]],columns=["AP"],index=[0.5,0.75,"mAP"])
+    out["map"] = map_result
 
-print(result_df)
-# print(second_result)
-
-
-
-
-
+    return out
+    # print(second_result)
